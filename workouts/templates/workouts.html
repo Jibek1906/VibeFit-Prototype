@@ -1,0 +1,225 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VibeFit Weekly Workouts Calendar</title>
+    <link rel="stylesheet" href="{% static 'css/workouts.css' %}" />
+    <style>
+      .header {
+        height: 60px;
+      }
+
+      .rest-day {
+        text-align: center;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin-top: 10px;
+        background-color: #f9f9f9;
+      }
+
+      .rest-day img {
+        max-width: 100px;
+        margin-bottom: 10px;
+      }
+
+      .workout iframe {
+        width: 100%;
+        height: 315px;
+        border: none;
+      }
+
+      .unavailable-workout {
+        text-align: center;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin-top: 10px;
+      }
+
+      .unavailable-workout a {
+        color: #007bff;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    {% include 'components/header.html' %}
+
+    <div class="container">
+      <div class="calendar-container">
+        <div class="week-navigation">
+          <button id="prev-week">Previous Week</button>
+          <h2 id="current-week"></h2>
+          <button id="next-week">Next Week</button>
+        </div>
+
+        <div class="calendar" id="calendar-days"></div>
+
+        <div class="workout-details" id="workout-details">
+          <h3>Workouts for <span id="selected-date"></span></h3>
+
+          <div id="workout-list">
+            {% for workout in workouts %}
+            <div class="workout">
+              {% if workout.is_rest_day %}
+              <div class="rest-day">
+                <img src="{% static 'img/rest_day.png' %}" alt="Rest Day" />
+                <h3>Rest Day</h3>
+                <p>{{ workout.description }}</p>
+              </div>
+              {% else %} {% if workout.available == False %}
+              <div class="unavailable-workout">
+                <h4>Video unavailable</h4>
+                <a href="{{ workout.video_url }}" target="_blank"
+                  >Watch on YouTube</a
+                >
+              </div>
+              {% else %}
+              <h4>{{ workout.title }}</h4>
+              <iframe
+                src="https://www.youtube.com/embed/{{ workout.embed_url }}"
+                allowfullscreen
+              ></iframe>
+              {% endif %} {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const calendarDays = document.getElementById("calendar-days");
+      const currentWeekLabel = document.getElementById("current-week");
+      const workoutDetails = document.getElementById("workout-details");
+      const workoutList = document.getElementById("workout-list");
+      const selectedDateSpan = document.getElementById("selected-date");
+
+      let currentDate = new Date();
+
+      function startOfWeek(date) {
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(date.setDate(diff));
+      }
+
+      function formatDate(date) {
+        return date.toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      }
+
+      function apiDateFormat(date) {
+        return date.toISOString().split("T")[0];
+      }
+
+      function renderCalendar(date) {
+        const weekStart = startOfWeek(new Date(date));
+        const days = [];
+
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(weekStart);
+          day.setDate(weekStart.getDate() + i);
+          days.push(day);
+        }
+
+        calendarDays.innerHTML = "";
+        days.forEach((day) => {
+          const dayElement = document.createElement("div");
+          dayElement.classList.add("day");
+          dayElement.textContent = `${day.getDate()}`;
+          dayElement.dataset.date = apiDateFormat(day);
+
+          dayElement.addEventListener("click", () => {
+            showWorkouts(day);
+            highlightSelectedDay(dayElement);
+          });
+
+          calendarDays.appendChild(dayElement);
+        });
+
+        currentWeekLabel.textContent = `${formatDate(days[0])} - ${formatDate(
+          days[6]
+        )}`;
+      }
+
+      async function showWorkouts(day) {
+        const dayString = apiDateFormat(day);
+
+        try {
+          const response = await fetch(`/workouts/api/?date=${dayString}`);
+          const data = await response.json();
+
+          selectedDateSpan.textContent = formatDate(day);
+
+          workoutList.innerHTML = "";
+          if (data.workouts && data.workouts.length > 0) {
+            data.workouts.forEach((workout) => {
+              const workoutElement = document.createElement("div");
+              workoutElement.classList.add("workout");
+
+              if (workout.is_rest_day) {
+                workoutElement.innerHTML = `
+                 <div class="rest-day">
+                   <img src="{% static 'img/rest_day.png' %}" alt="Rest Day">
+                   <p>Rest Day</p>
+                 </div>
+               `;
+              } else if (workout.available === false) {
+                workoutElement.innerHTML = `
+                 <div class="unavailable-workout">
+                   <h4>Video unavailable</h4>
+                   <a href="${workout.video_url}" target="_blank">Watch on YouTube</a>
+                 </div>
+               `;
+              } else {
+                workoutElement.innerHTML = `
+                 <h4>${workout.title}</h4>
+                 <iframe
+                   src="https://www.youtube.com/embed/${workout.embed_url}"
+                   allowfullscreen
+                 ></iframe>
+               `;
+              }
+
+              workoutList.appendChild(workoutElement);
+            });
+          } else {
+            workoutList.innerHTML =
+              "<p>No workouts available for this day.</p>";
+          }
+
+          workoutDetails.classList.add("active");
+        } catch (error) {
+          console.error("Error fetching workouts:", error);
+        }
+      }
+
+      document.getElementById("prev-week").addEventListener("click", () => {
+        currentDate.setDate(currentDate.getDate() - 7);
+        renderCalendar(currentDate);
+      });
+
+      document.getElementById("next-week").addEventListener("click", () => {
+        currentDate.setDate(currentDate.getDate() + 7);
+        renderCalendar(currentDate);
+      });
+
+      function highlightSelectedDay(selectedDay) {
+        const allDays = document.querySelectorAll(".day");
+        allDays.forEach((day) => {
+          day.classList.remove("active");
+        });
+        selectedDay.classList.add("active");
+      }
+
+      renderCalendar(currentDate);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../static/css/nutrition.css" />
+    <title>Calories Counter</title>
+    <style>
+      .header {
+        height: 60px;
+      }
+    </style>
+  </head>
+  <body>
+    {% include 'components/header.html' %}
+    <div class="container">
+      <div class="calendar">
+        <div class="calendar-header">
+          <button id="prev-week">&lt;</button>
+          <h2 id="current-week">December 18 - December 24</h2>
+          <button id="next-week">&gt;</button>
+          <button id="add-meal">Add Meal</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Breakfast</th>
+              <th>Lunch</th>
+              <th>Dinner</th>
+              <th>Snacks</th>
+            </tr>
+          </thead>
+          <tbody id="calendar-body"></tbody>
+        </table>
+      </div>
+
+      <div class="summary">
+        <h2>Daily Summary</h2>
+        <div class="circle">
+          <p>Total Calories</p>
+          <p class="big-text" id="total-calories">0</p>
+          <p>kcal</p>
+        </div>
+        <div class="macros">
+          <p>Proteins: <span id="total-proteins">0</span> g</p>
+          <p>Fats: <span id="total-fats">0</span> g</p>
+          <p>Carbs: <span id="total-carbs">0</span> g</p>
+        </div>
+        <div class="remaining-calories" id="remaining-calories">
+          Remaining Calories: 1200 kcal
+        </div>
+        <div class="training-recommendation" id="training-recommendation"></div>
+      </div>
+    </div>
+
+    <div id="meal-modal">
+      <div class="modal-content">
+        <h2>Add Meal</h2>
+        <label for="meal-date">Date:</label>
+        <input type="date" id="meal-date" />
+        <label for="meal-type">Meal Type:</label>
+        <select id="meal-type">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snacks">Snacks</option>
+        </select>
+        <label for="meal-name">Meal Name:</label>
+        <input type="text" id="meal-name" placeholder="Name of the meal" />
+        <label for="meal-calories">Calories:</label>
+        <input type="number" id="meal-calories" placeholder="Calories" />
+        <label for="meal-proteins">Proteins:</label>
+        <input type="number" id="meal-proteins" placeholder="Proteins (g)" />
+        <label for="meal-fats">Fats:</label>
+        <input type="number" id="meal-fats" placeholder="Fats (g)" />
+        <label for="meal-carbs">Carbs:</label>
+        <input type="number" id="meal-carbs" placeholder="Carbs (g)" />
+        <button id="save-meal">Save</button>
+        <button id="close-modal">Close</button>
+      </div>
+    </div>
+
+    <script>
+      async function calculateCalories() {
+        const response = await fetch("/api/user-details");
+        const userDetails = await response.json();
+
+        const { weight, height, training_level, goal } = userDetails;
+
+        const calorieResponse = await fetch("/api/calculate-calories", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ weight, height, training_level, goal }),
+        });
+        const { daily_calorie_goal } = await calorieResponse.json();
+
+        document.getElementById(
+          "remaining-calories"
+        ).textContent = `Remaining Calories: ${daily_calorie_goal} kcal`;
+      }
+
+      async function getTrainingRecommendation(caloriesConsumed) {
+        const response = await fetch("/api/training-recommendation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ calories_consumed: caloriesConsumed }),
+        });
+        const { recommendation } = await response.json();
+
+        document.getElementById("training-recommendation").textContent =
+          recommendation;
+      }
+
+      window.onload = () => {
+        calculateCalories();
+        getTrainingRecommendation(1500);
+      };
+    </script>
+  </body>
+</html>
