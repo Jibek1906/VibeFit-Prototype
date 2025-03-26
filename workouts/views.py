@@ -9,31 +9,28 @@ from .youtube_api import search_youtube_videos
 
 @login_required
 def workouts_api(request):
-    """API для подбора тренировок с учетом уровня и цели пользователя."""
+    """API for selecting workouts based on user level, goal, and AI-generated plan."""
     try:
         user_details = UserDetails.objects.get(user=request.user)
     except UserDetails.DoesNotExist:
         return JsonResponse({"error": "User details not found"}, status=400)
 
-    # Количество тренировок в день по уровню подготовки
-    workout_count_map = {
-        'beginner': 3,
-        'intermediate': 4,
-        'advanced': 5
-    }
-    num_workouts = workout_count_map.get(user_details.training_level, 3)
+    # Generate personalized workout plan based on user details
+    workout_plan = generate_workout_plan(user_details)
 
-    # Подбираем тренировки
-    query = f"{user_details.goal} {user_details.training_level} workout"
-    workouts = search_youtube_videos(query, max_results=15)
+    # Search YouTube for workout videos based on the plan
+    youtube_workouts = []
+    for workout_name in workout_plan:
+        youtube_videos = search_youtube_videos(workout_name, max_results=5)  # Fetch videos for each workout
+        youtube_workouts.extend(youtube_videos)
 
-    if not workouts:
+    if not youtube_workouts:
         return JsonResponse({"error": "No workouts found"}, status=400)
 
-    # Выбираем нужное количество тренировок на день
-    selected_workouts = random.sample(workouts, min(len(workouts), num_workouts))
+    # Select a random workout video for the day
+    selected_workouts = random.sample(youtube_workouts, min(len(youtube_workouts), 3))  # Limit to 3 videos
 
-    # Генерация JSON-ответа
+    # Generate JSON response for workout schedule
     workout_schedule = []
     for workout in selected_workouts:
         workout_schedule.append({
@@ -45,6 +42,31 @@ def workouts_api(request):
         })
 
     return JsonResponse({"workouts": workout_schedule}, safe=False)
+
+def generate_workout_plan(user_details):
+    """Generates a personalized workout plan based on user data."""
+    workouts = []
+
+    # Example: A simple heuristic to generate workout plans
+    if user_details.goal == 'lose-weight':
+        if user_details.training_level == 'beginner':
+            workouts = ['Cardio: Walking', 'Strength: Bodyweight Squats']
+        elif user_details.training_level == 'intermediate':
+            workouts = ['Cardio: Running', 'Strength: Dumbbell Exercises']
+        else:
+            workouts = ['HIIT Cardio', 'Strength: Compound Lifts']
+
+    elif user_details.goal == 'gain-muscle':
+        if user_details.training_level == 'beginner':
+            workouts = ['Strength: Bodyweight Squats', 'Strength: Push-ups']
+        elif user_details.training_level == 'intermediate':
+            workouts = ['Strength: Deadlifts', 'Strength: Pull-ups']
+        else:
+            workouts = ['Strength: Powerlifting', 'Strength: Olympic Lifts']
+
+    # Add more custom logic here for other goals and levels
+
+    return workouts
 
 @login_required
 def workouts_view(request):

@@ -63,27 +63,28 @@
           <h3>Workouts for <span id="selected-date"></span></h3>
 
           <div id="workout-list">
+            <!-- Displaying workouts for a specific day -->
             {% for workout in workouts %}
             <div class="workout">
               {% if workout.is_rest_day %}
               <div class="rest-day">
                 <img src="{% static 'img/rest_day.png' %}" alt="Rest Day" />
                 <h3>Rest Day</h3>
-                <p>{{ workout.description }}</p>
               </div>
-              {% else %} {% if workout.available == False %}
+              {% else %}
+              <h4>{{ workout.title }}</h4>
+              {% if workout.embed_url %}
+              <iframe
+                src="https://www.youtube.com/embed/{{ workout.embed_url }}"
+                allowfullscreen
+              ></iframe>
+              {% else %}
               <div class="unavailable-workout">
                 <h4>Video unavailable</h4>
                 <a href="{{ workout.video_url }}" target="_blank"
                   >Watch on YouTube</a
                 >
               </div>
-              {% else %}
-              <h4>{{ workout.title }}</h4>
-              <iframe
-                src="https://www.youtube.com/embed/{{ workout.embed_url }}"
-                allowfullscreen
-              ></iframe>
               {% endif %} {% endif %}
             </div>
             {% endfor %}

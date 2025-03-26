@@ -73,6 +73,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vibefit.wsgi.application'
 
+# settings.py
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # Simple in-memory cache for development
+        'TIMEOUT': 3600 * 6,  # Cache timeout in seconds (6 hours)
+    }
+}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
