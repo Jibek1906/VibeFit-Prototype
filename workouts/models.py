@@ -13,7 +13,7 @@ class Workout(models.Model):
     training_level = models.CharField(max_length=50)
     min_weight = models.DecimalField(max_digits=5, decimal_places=2)
     max_weight = models.DecimalField(max_digits=5, decimal_places=2)
-    date = models.DateField()  # Изменено с repeat_interval_weeks на конкретную дату
+    date = models.DateField()
     is_ai_generated = models.BooleanField(default=True)
     is_rest_day = models.BooleanField(default=False)
 

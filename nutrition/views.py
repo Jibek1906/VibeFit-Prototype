@@ -7,53 +7,57 @@ from users.models import UserDetails
 import json
 from django.views.decorators.csrf import csrf_exempt
 
-# nutrition/views.py
-
 @login_required
 def calculate_daily_calories(user_details):
-    # Рассчитываем возраст
     age = (datetime.now().date() - user_details.birth_date).days // 365 if user_details.birth_date else 30
     weight = float(user_details.weight)
     height = user_details.height
+    gender = user_details.gender
+    goal = user_details.goal
+    training_level = user_details.training_level
 
-    # Расчет базового метаболизма (BMR) по формуле Миффлина-Сан Жеора
-    if user_details.gender == 'male':
+    # BMR Calculation (Mifflin-St Jeor)
+    if gender == 'male':
         bmr = 10 * weight + 6.25 * height - 5 * age + 5
     else:  # female
         bmr = 10 * weight + 6.25 * height - 5 * age - 161
 
-    # Учет уровня активности
+    # Activity Multipliers
     activity_multipliers = {
         'beginner': 1.2,
         'intermediate': 1.375,
         'advanced': 1.55
     }
-    activity_multiplier = activity_multipliers.get(user_details.training_level, 1.2)
-    tdee = bmr * activity_multiplier  # Total Daily Energy Expenditure
+    activity_multiplier = activity_multipliers.get(training_level, 1.2)
+    tdee = bmr * activity_multiplier
 
-    # Корректировка по цели
-    if user_details.goal == 'lose-weight':
-        calories = tdee * 0.85  # 15% дефицит
-    elif user_details.goal == 'gain-muscle':
-        calories = tdee * 1.15  # 15% профицит
+    # Goal Adjustment
+    if goal == 'lose-weight':
+        calories = tdee * 0.85  # 15% deficit
+    elif goal == 'gain-muscle':
+        calories = tdee * 1.15  # 15% surplus
     else:  # maintain
         calories = tdee
 
-    # Распределение макронутриентов
-    if user_details.goal == 'gain-muscle':
-        proteins = weight * 2.2  # 2.2г на кг веса для набора мышц
-        fats = weight * 1  # 1г на кг веса
-    else:
-        proteins = weight * 1.6  # 1.6г на кг веса стандарт
-        fats = weight * 0.8  # 0.8г на кг веса
+    # Macronutrients Distribution
+    if goal == 'gain-muscle':
+        proteins = weight * (2.2 if gender == 'male' else 1.8)
+        fats = weight * (1 if gender == 'male' else 0.8)
+    elif goal == 'lose-weight':
+        proteins = weight * (2.0 if gender == 'male' else 1.6)
+        fats = weight * (0.8 if gender == 'male' else 0.7)
+    else:  # maintain
+        proteins = weight * (1.6 if gender == 'male' else 1.4)
+        fats = weight * (0.8 if gender == 'male' else 0.7)
 
-    carbs = (calories - (proteins * 4 + fats * 9)) / 4  # остаток калорий на углеводы
+    carbs = (calories - (proteins * 4 + fats * 9)) / 4
 
     return {
         'calories': round(calories),
         'proteins': round(proteins),
         'fats': round(fats),
-        'carbs': round(carbs)
+        'carbs': round(carbs),
+        'water_intake': round(weight * 35)  # 35 ml per kg
     }
 
 @login_required
@@ -64,28 +68,42 @@ def nutrition_view(request):
     try:
         daily_nutrition = DailyNutrition.objects.get(user=user_details, date=today)
     except DailyNutrition.DoesNotExist:
-        # Сначала создаем запись с нулевыми значениями
+        calculated = calculate_daily_calories(user_details)
         daily_nutrition = DailyNutrition.objects.create(
             user=user_details,
             date=today,
+            goal_calories=calculated['calories'],
+            goal_proteins=calculated['proteins'],
+            goal_fats=calculated['fats'],
+            goal_carbs=calculated['carbs'],
             calories=0,
             proteins=0,
             fats=0,
-            carbs=0
+            carbs=0,
+            water_intake=0
         )
-        # Затем обновляем расчетными значениями
+    else:
         calculated = calculate_daily_calories(user_details)
-        for field, value in calculated.items():
-            setattr(daily_nutrition, field, value)
-        daily_nutrition.save()
+        needs_update = (
+            daily_nutrition.goal_calories != calculated['calories'] or
+            daily_nutrition.goal_proteins != calculated['proteins'] or
+            daily_nutrition.goal_fats != calculated['fats'] or
+            daily_nutrition.goal_carbs != calculated['carbs']
+        )
+        
+        if needs_update:
+            daily_nutrition.goal_calories = calculated['calories']
+            daily_nutrition.goal_proteins = calculated['proteins']
+            daily_nutrition.goal_fats = calculated['fats']
+            daily_nutrition.goal_carbs = calculated['carbs']
+            daily_nutrition.save()
 
     meals = Meal.objects.filter(nutrition=daily_nutrition).order_by('meal_type')
-    remaining_calories = daily_nutrition.calories - sum(m.calories for m in meals)
-
+    
     context = {
         'daily_nutrition': daily_nutrition,
         'meals': meals,
-        'remaining_calories': remaining_calories,
+        'water_goal': round(float(user_details.weight) * 35)
     }
     return render(request, 'nutrition.html', context)
 
@@ -96,9 +114,8 @@ def api_save_meal(request):
         try:
             data = json.loads(request.body)
             user_details = UserDetails.objects.get(user=request.user)
-            
-            # Получаем или создаем запись о питании за день
             date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            
             daily_nutrition, created = DailyNutrition.objects.get_or_create(
                 user=user_details,
                 date=date,
@@ -106,11 +123,11 @@ def api_save_meal(request):
                     'calories': 0,
                     'proteins': 0,
                     'fats': 0,
-                    'carbs': 0
+                    'carbs': 0,
+                    **calculate_daily_calories(user_details)
                 }
             )
-            
-            # Создаем прием пищи
+
             meal = Meal.objects.create(
                 nutrition=daily_nutrition,
                 meal_type=data['meal_type'],
@@ -120,17 +137,17 @@ def api_save_meal(request):
                 fats=data['fats'],
                 carbs=data['carbs']
             )
-            
-            # Обновляем суммарные значения за день
+
             daily_nutrition.calories += data['calories']
             daily_nutrition.proteins += data['proteins']
             daily_nutrition.fats += data['fats']
             daily_nutrition.carbs += data['carbs']
             daily_nutrition.save()
-            
+
             return JsonResponse({
                 'status': 'success',
-                'message': 'Meal saved successfully'
+                'message': 'Meal saved successfully',
+                'meal_id': meal.id
             })
         except Exception as e:
             return JsonResponse({
@@ -144,129 +161,155 @@ def api_save_meal(request):
 
 @login_required
 @csrf_exempt
-def api_get_meals(request):
-    if request.method == 'GET':
-        try:
-            user_details = UserDetails.objects.get(user=request.user)
-            date_from = request.GET.get('date_from')
-            date_to = request.GET.get('date_to')
-            
-            if not date_from or not date_to:
-                return JsonResponse({
-                    'status': 'error',
-                    'error': 'Missing date parameters'
-                }, status=400)
-                
-            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
-            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-            
-            daily_nutritions = DailyNutrition.objects.filter(
-                user=user_details,
-                date__range=[date_from, date_to]
-            ).prefetch_related('meals')
-            
-            meals_data = []
-            for nutrition in daily_nutritions:
-                for meal in nutrition.meals.all():
-                    meals_data.append({
-                        'date': nutrition.date.strftime('%Y-%m-%d'),
-                        'meal_type': meal.meal_type,
-                        'name': meal.name,
-                        'calories': meal.calories,
-                        'proteins': meal.proteins,
-                        'fats': meal.fats,
-                        'carbs': meal.carbs
-                    })
-                    
-            return JsonResponse({
-                'status': 'success',
-                'meals': meals_data
-            })
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'error': str(e)
-            }, status=400)
-    return JsonResponse({
-        'status': 'error',
-        'error': 'Invalid request method'
-    }, status=405)
-
-@login_required
-@csrf_exempt
-def api_user_details(request):
-    if request.method == 'GET':
-        try:
-            user_details = UserDetails.objects.get(user=request.user)
-            return JsonResponse({
-                'weight': float(user_details.weight),
-                'height': user_details.height,
-                'training_level': user_details.training_level,
-                'goal': user_details.goal,
-                'gender': user_details.gender,
-                'age': (datetime.now().date() - user_details.birth_date).days // 365 if user_details.birth_date else 30,
-                'status': 'success'
-            })
-        except Exception as e:
-            return JsonResponse({'error': str(e), 'status': 'error'}, status=400)
-    return JsonResponse({'error': 'Invalid request method', 'status': 'error'}, status=405)
-
-@login_required
-@csrf_exempt
-def api_calculate_calories(request):
+def api_update_goals(request):
     if request.method == 'POST':
         try:
             user_details = UserDetails.objects.get(user=request.user)
-            data = calculate_daily_calories(user_details)
+            today = datetime.now().date()
+            
+            daily_nutrition, created = DailyNutrition.objects.get_or_create(
+                user=user_details,
+                date=today,
+                defaults={
+                    'calories': 0,
+                    'proteins': 0,
+                    'fats': 0,
+                    'carbs': 0
+                }
+            )
+            
+            calculated = calculate_daily_calories(user_details)
+            daily_nutrition.goal_calories = calculated['calories']
+            daily_nutrition.goal_proteins = calculated['proteins']
+            daily_nutrition.goal_fats = calculated['fats']
+            daily_nutrition.goal_carbs = calculated['carbs']
+            daily_nutrition.save()
+            
             return JsonResponse({
-                'daily_calorie_goal': data['calories'],
-                'proteins': data['proteins'],
-                'fats': data['fats'],
-                'carbs': data['carbs'],
-                'status': 'success'
+                'status': 'success',
+                'message': 'Goals updated successfully',
+                'goals': calculated
             })
         except Exception as e:
-            return JsonResponse({'error': str(e), 'status': 'error'}, status=400)
-    return JsonResponse({'error': 'Invalid request method', 'status': 'error'}, status=405)
-
-# nutrition/views.py
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Invalid request method'
+    }, status=405)
 
 @login_required
-def api_get_nutrition_data(request):
+@csrf_exempt
+def api_update_water_intake(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_details = UserDetails.objects.get(user=request.user)
+            date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            
+            daily_nutrition, created = DailyNutrition.objects.get_or_create(
+                user=user_details,
+                date=date,
+                defaults={
+                    'water_intake': 0,
+                    **calculate_daily_calories(user_details)
+                }
+            )
+            
+            daily_nutrition.water_intake = data['amount']
+            daily_nutrition.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'water_intake': daily_nutrition.water_intake
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Invalid request method'
+    }, status=405)
+
+@login_required
+@csrf_exempt
+def api_get_daily_nutrition(request):
     if request.method == 'GET':
         try:
             user_details = UserDetails.objects.get(user=request.user)
-            date_from = request.GET.get('date_from', datetime.now().date().strftime('%Y-%m-%d'))
-            date_to = request.GET.get('date_to', datetime.now().date().strftime('%Y-%m-%d'))
-
-            daily_nutritions = DailyNutrition.objects.filter(
+            date_str = request.GET.get('date', datetime.now().date().strftime('%Y-%m-%d'))
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+            daily_nutrition, created = DailyNutrition.objects.get_or_create(
                 user=user_details,
-                date__range=[date_from, date_to]
-            ).prefetch_related('meals')
-
-            days_data = []
-            for nutrition in daily_nutritions:
-                days_data.append({
-                    'date': nutrition.date.strftime('%Y-%m-%d'),
-                    'day': nutrition.date.strftime('%A').lower(),
-                    'calories': nutrition.calories,
-                    'proteins': nutrition.proteins,
-                    'fats': nutrition.fats,
-                    'carbs': nutrition.carbs,
-                    'goal_calories': calculate_daily_calories(user_details)['calories'],
-                    'meals': [{
-                        'meal_type': meal.meal_type,
-                        'name': meal.name,
-                        'calories': meal.calories,
-                        'proteins': meal.proteins,
-                        'fats': meal.fats,
-                        'carbs': meal.carbs
-                    } for meal in nutrition.meals.all()]
-                })
-
+                date=date,
+                defaults={
+                    **calculate_daily_calories(user_details),
+                    'calories': 0,
+                    'proteins': 0,
+                    'fats': 0,
+                    'carbs': 0
+                }
+            )
+            
+            meals = Meal.objects.filter(nutrition=daily_nutrition).order_by('meal_type')
+            
             return JsonResponse({
                 'status': 'success',
-                'days': days_data
+                'date': date_str,
+                'calories': daily_nutrition.calories,
+                'proteins': daily_nutrition.proteins,
+                'fats': daily_nutrition.fats,
+                'carbs': daily_nutrition.carbs,
+                'goal_calories': daily_nutrition.goal_calories,
+                'goal_proteins': daily_nutrition.goal_proteins,
+                'goal_fats': daily_nutrition.goal_fats,
+                'goal_carbs': daily_nutrition.goal_carbs,
+                'water_intake': daily_nutrition.water_intake,
+                'meals': [{
+                    'id': meal.id,
+                    'meal_type': meal.meal_type,
+                    'name': meal.name,
+                    'calories': meal.calories,
+                    'proteins': meal.proteins,
+                    'fats': meal.fats,
+                    'carbs': meal.carbs,
+                    'created_at': meal.created_at.strftime('%H:%M')
+                } for meal in meals]
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'error': str(e)
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'error': 'Invalid request method'
+    }, status=405)
+
+@login_required
+@csrf_exempt
+def api_delete_meal(request, meal_id):
+    if request.method == 'DELETE':
+        try:
+            meal = Meal.objects.get(id=meal_id, nutrition__user__user=request.user)
+            daily_nutrition = meal.nutrition
+            
+            daily_nutrition.calories -= meal.calories
+            daily_nutrition.proteins -= meal.proteins
+            daily_nutrition.fats -= meal.fats
+            daily_nutrition.carbs -= meal.carbs
+            daily_nutrition.save()
+            
+            meal.delete()
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Meal deleted successfully'
             })
         except Exception as e:
             return JsonResponse({
