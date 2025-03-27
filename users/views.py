@@ -69,7 +69,7 @@ def login_view(request):
 
 def user_details(request, user_id):
     user = get_object_or_404(User, id=user_id)
-
+    
     try:
         user_details = UserDetails.objects.get(user=user)
     except UserDetails.DoesNotExist:
@@ -81,15 +81,22 @@ def user_details(request, user_id):
             training_level='beginner'
         )
 
-    form = UserDetailsForm(request.POST or None, instance=user_details)
-
-    if form.is_valid():
-        form.save()
-
-        user.backend = 'users.backend.EmailAuthBackend'
-        login(request, user)
-
-        return redirect('login')
+    if request.method == 'POST':
+        form = UserDetailsForm(request.POST, request.FILES, instance=user_details)
+        if form.is_valid():
+            # Если пол уже был установлен, сохраняем исходное значение
+            if user_details.gender:
+                details = form.save(commit=False)
+                details.gender = user_details.gender
+                details.save()
+            else:
+                form.save()
+            
+            user.backend = 'users.backend.EmailAuthBackend'
+            login(request, user)
+            return redirect('login')
+    else:
+        form = UserDetailsForm(instance=user_details)
 
     return render(request, 'user_details.html', {'form': form, 'user_details': user_details})
 

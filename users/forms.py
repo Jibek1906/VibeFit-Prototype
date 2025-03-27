@@ -73,16 +73,18 @@ def validate_decimal(value):
         raise ValidationError("Invalid decimal value")
 
 class UserDetailsForm(forms.ModelForm):
-    weight = forms.DecimalField(
-        max_digits=5, decimal_places=2,
-        widget=forms.NumberInput(attrs={'placeholder': 'Weight (kg)', 'step': '0.01'}),
-        validators=[validate_decimal]
-    )
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Если пол уже установлен, делаем поле readonly
+        if self.instance and self.instance.gender:
+            self.fields['gender'].widget.attrs['readonly'] = True
+            self.fields['gender'].widget.attrs['disabled'] = True
+    
     class Meta:
         model = UserDetails
-        fields = ['height', 'weight', 'goal', 'training_level', 'birth_date']
+        fields = ['gender', 'height', 'weight', 'goal', 'training_level', 'birth_date']
         widgets = {
+            'gender': forms.Select(choices=UserDetails.GENDER_CHOICES),
             'height': forms.NumberInput(attrs={'placeholder': 'Height (cm)'}),
             'goal': forms.Select(attrs={'placeholder': 'Goal'}),
             'training_level': forms.Select(attrs={'placeholder': 'Training level'}),

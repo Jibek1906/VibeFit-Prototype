@@ -167,26 +167,26 @@
 
               if (workout.is_rest_day) {
                 workoutElement.innerHTML = `
-                 <div class="rest-day">
-                   <img src="{% static 'img/rest_day.png' %}" alt="Rest Day">
-                   <p>Rest Day</p>
-                 </div>
-               `;
+                <div class="rest-day">
+                  <img src="{% static 'img/rest_day.png' %}" alt="Rest Day">
+                  <p>Rest Day</p>
+                </div>
+              `;
               } else if (workout.available === false) {
                 workoutElement.innerHTML = `
-                 <div class="unavailable-workout">
-                   <h4>Video unavailable</h4>
-                   <a href="${workout.video_url}" target="_blank">Watch on YouTube</a>
-                 </div>
-               `;
+                <div class="unavailable-workout">
+                  <h4>Video unavailable</h4>
+                  <a href="${workout.video_url}" target="_blank">Watch on YouTube</a>
+                </div>
+              `;
               } else {
                 workoutElement.innerHTML = `
-                 <h4>${workout.title}</h4>
-                 <iframe
-                   src="https://www.youtube.com/embed/${workout.embed_url}"
-                   allowfullscreen
-                 ></iframe>
-               `;
+                <h4>${workout.title}</h4>
+                <iframe
+                  src="https://www.youtube.com/embed/${workout.embed_url}"
+                  allowfullscreen
+                ></iframe>
+              `;
               }
 
               workoutList.appendChild(workoutElement);
