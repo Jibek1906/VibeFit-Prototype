@@ -112,7 +112,7 @@ def workouts_api(request):
             {
                 "title": workout["title"],
                 "video_url": workout["video_url"],
-                "embed_url": f"https://www.youtube.com/embed/{workout['video_id']}",
+                "embed_url": f"https://www.youtube-nocookie.com/embed/{workout['video_id']}",
                 "duration": workout["duration"],
                 "trainer": workout["trainer"],
                 "tags": workout["tags"],

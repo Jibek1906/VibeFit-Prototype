@@ -289,7 +289,7 @@
         }
       }
 
-      // workouts.html (обновленная часть JavaScript)
+      // workouts.html (обновленный JavaScript)
       function displayWorkouts(data) {
         workoutList.innerHTML = "";
         if (data.workouts && data.workouts.length > 0) {
@@ -308,15 +308,15 @@
             } else {
               workoutElement.innerHTML = `
                   <div class="workout-content">
-                      <div class="video-container">
-                          <img src="${workout.thumbnail}" alt="${
-                workout.title
-              }" class="video-thumbnail">
-                          <button class="play-button" data-video-id="${
-                            workout.video_id
-                          }">
-                              <i class="fas fa-play"></i>
-                          </button>
+                      <div class="video-embed-container">
+                          <iframe 
+                              src="${workout.embed_url}?rel=0&enablejsapi=1" 
+                              frameborder="0" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowfullscreen
+                              class="workout-video"
+                              loading="lazy">
+                          </iframe>
                       </div>
                       <h4>${workout.title}</h4>
                       ${
@@ -358,22 +358,6 @@
               `;
             }
             workoutList.appendChild(workoutElement);
-          });
-
-          // Добавляем обработчики для кнопок воспроизведения
-          document.querySelectorAll(".play-button").forEach((button) => {
-            button.addEventListener("click", (e) => {
-              const videoId = e.currentTarget.getAttribute("data-video-id");
-              const iframe = document.createElement("iframe");
-              iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-              iframe.setAttribute("allowfullscreen", "");
-              iframe.setAttribute("frameborder", "0");
-              iframe.classList.add("workout-video");
-
-              const container = e.currentTarget.closest(".video-container");
-              container.innerHTML = "";
-              container.appendChild(iframe);
-            });
           });
         } else {
           workoutList.innerHTML = "<p>No workouts available for this day.</p>";
