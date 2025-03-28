@@ -208,19 +208,20 @@ def api_update_water_intake(request):
             data = json.loads(request.body)
             user_details = UserDetails.objects.get(user=request.user)
             date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-            
+
             daily_nutrition, created = DailyNutrition.objects.get_or_create(
                 user=user_details,
                 date=date,
                 defaults={
-                    'water_intake': 0,
+                    'water_intake': data['amount'],
                     **calculate_daily_calories(user_details)
                 }
             )
-            
-            daily_nutrition.water_intake = data['amount']
-            daily_nutrition.save()
-            
+
+            if not created:
+                daily_nutrition.water_intake = data['amount']
+                daily_nutrition.save()
+
             return JsonResponse({
                 'status': 'success',
                 'water_intake': daily_nutrition.water_intake

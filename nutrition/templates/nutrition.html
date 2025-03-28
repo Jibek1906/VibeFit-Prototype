@@ -5,106 +5,300 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="{% static 'css/nutrition.css' %}" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
     <title>Calories Counter</title>
     <style>
+      :root {
+        --primary-color: #538558;
+        --secondary-color: #a8a48c;
+        --light-color: #f8f9fa;
+        --dark-color: #333;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --info-color: #17a2b8;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--dark-color);
+        background-color: #f5f5f5;
+        line-height: 1.6;
+      }
+
       .header {
-        height: 60px;
-        background-color: #a8a48c;
-        padding: 0 20px;
+        height: 70px;
+        background-color: var(--secondary-color);
+        padding: 0 30px;
         display: flex;
         align-items: center;
-        border-bottom: 1px solid #a8a48c;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
 
       .today {
-        background-color: #9b957e;
+        background-color: var(--primary-color);
         color: white;
         border-radius: 50%;
-        padding: 5px;
+        padding: 8px;
+        margin-left: 10px;
+        font-weight: bold;
       }
+
       .selected-day {
-        border: 2px solid #9b957e;
+        border: 2px solid var(--primary-color);
       }
+
       .meal-entry {
-        background-color: #f5f5f5;
-        padding: 5px;
-        margin: 3px 0;
-        border-radius: 3px;
+        background-color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
         font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
+
+      .meal-entry:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
       .remaining-positive {
-        color: green;
+        color: var(--success-color);
       }
+
       .remaining-negative {
-        color: red;
+        color: var(--danger-color);
       }
+
       .container {
         display: flex;
         flex-wrap: wrap;
-        padding: 20px;
+        padding: 25px;
+        gap: 25px;
       }
+
       .calendar {
         flex: 1;
         min-width: 300px;
-        margin-right: 20px;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       }
+
       .summary {
-        flex: 0 0 300px;
+        flex: 0 0 350px;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
       }
+
       .calendar-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
       }
+
       .calendar-header h2 {
         margin: 0;
-        font-size: 1.2rem;
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        flex-grow: 1;
+        text-align: center;
       }
+
       .calendar-header button {
-        background: #538558;
+        background: var(--primary-color);
         border: none;
         color: white;
-        padding: 10px 15px;
-        border-radius: 25px;
-        margin-bottom: 15px;
+        padding: 10px 20px;
+        border-radius: 30px;
         cursor: pointer;
         font-size: 1em;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
+
+      .calendar-header button:hover {
+        background: #3a6a3d;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      #prev-day,
+      #next-day {
+        padding: 10px 15px;
+        min-width: 50px;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
       }
+
       th,
       td {
-        padding: 8px;
+        padding: 12px 15px;
         text-align: left;
-        border-bottom: 1px solid #a8a48c;
+        border-bottom: 1px solid #e0e0e0;
       }
+
       th {
-        background-color: #e0decc;;
+        background-color: var(--light-color);
+        font-weight: 600;
+        color: var(--dark-color);
       }
+
       .circle {
-        background: #f8f9fa;
+        background: var(--light-color);
         border-radius: 50%;
-        width: 200px;
-        height: 200px;
+        width: 220px;
+        height: 220px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        margin: 0 auto 20px;
+        margin: 0 auto 25px;
+        border: 8px solid #e9ecef;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
       }
+
       .big-text {
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: bold;
-      }
-      .macros {
-        margin-bottom: 15px;
-      }
-      .macros p {
+        color: var(--primary-color);
         margin: 5px 0;
       }
+
+      .macros {
+        margin-bottom: 20px;
+      }
+
+      .macro-item {
+        margin: 15px 0;
+        position: relative;
+      }
+
+      .macro-item i {
+        margin-right: 10px;
+        color: var(--primary-color);
+        width: 20px;
+        text-align: center;
+      }
+
+      .macro-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+
+      .macro-values {
+        font-weight: 500;
+      }
+
+      .progress-container {
+        width: 100%;
+      }
+
+      .progress-bar {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+
+      .protein-progress {
+        background: #e63946;
+      }
+
+      .fat-progress {
+        background: #457b9d;
+      }
+
+      .carb-progress {
+        background: #2a9d8f;
+      }
+
+      .water-tracker {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .water-tracker h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+      }
+
+      .water-tracker h3 i {
+        margin-right: 10px;
+        color: var(--info-color);
+      }
+
+      .water-info {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+      }
+
+      .water-remaining {
+        color: var(--info-color);
+        font-weight: 500;
+      }
+
+      .water-tracker progress {
+        width: 100%;
+        height: 10px;
+        border-radius: 5px;
+      }
+
+      .water-tracker progress::-webkit-progress-bar {
+        background-color: #e9ecef;
+        border-radius: 5px;
+      }
+
+      .water-tracker progress::-webkit-progress-value {
+        background-color: var(--info-color);
+        border-radius: 5px;
+      }
+
+      .water-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .water-tracker button {
+        background: var(--info-color);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        flex: 1;
+      }
+
+      .water-tracker button:hover {
+        background: #138496;
+      }
+
       .modal {
         display: none;
         position: fixed;
@@ -116,50 +310,141 @@
         z-index: 1000;
         justify-content: center;
         align-items: center;
+        animation: fadeIn 0.3s ease;
       }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
       .modal-content {
         background-color: white;
-        padding: 20px;
-        border-radius: 5px;
+        padding: 30px;
+        border-radius: 10px;
         width: 90%;
         max-width: 500px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        animation: slideUp 0.4s ease;
       }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
       .modal-content h2 {
         margin-top: 0;
+        color: var(--primary-color);
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
       }
+
       .modal-content label {
         display: block;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--dark-color);
       }
+
       .modal-content input,
       .modal-content select {
         width: 100%;
-        padding: 8px;
-        margin-bottom: 15px;
+        padding: 12px;
+        margin-bottom: 20px;
         border: 1px solid #ddd;
-        border-radius: 3px;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: border 0.3s ease;
       }
+
+      .modal-content input:focus,
+      .modal-content select:focus {
+        border-color: var(--primary-color);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(83, 133, 88, 0.2);
+      }
+
       .modal-content button {
-        padding: 8px 15px;
+        padding: 12px 20px;
         margin-right: 10px;
         border: none;
-        border-radius: 3px;
+        border-radius: 6px;
         cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
       }
+
       #save-meal {
-        background-color: #28a745;
+        background-color: var(--success-color);
         color: white;
       }
+
+      #save-meal:hover {
+        background-color: #218838;
+      }
+
       #close-modal {
         background-color: #6c757d;
         color: white;
       }
+
+      #close-modal:hover {
+        background-color: #5a6268;
+      }
+
       .delete-meal {
         background: none;
         border: none;
-        color: #dc3545;
+        color: var(--danger-color);
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 1.2rem;
+        margin-left: 10px;
+        transition: transform 0.2s ease;
+      }
+
+      .delete-meal:hover {
+        transform: scale(1.2);
+      }
+
+      .meal-type-header {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+          padding: 15px;
+        }
+
+        .calendar,
+        .summary {
+          width: 100%;
+          margin-right: 0;
+        }
+
+        .calendar-header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .calendar-header h2 {
+          order: -1;
+          margin-bottom: 10px;
+        }
       }
     </style>
   </head>
@@ -169,10 +454,10 @@
     <div class="container">
       <div class="calendar">
         <div class="calendar-header">
-          <button id="prev-day">&lt;</button>
+          <button id="prev-day">&lt; Previous</button>
           <h2 id="current-date"></h2>
-          <button id="next-day">&gt;</button>
-          <button id="add-meal">Add Meal</button>
+          <button id="next-day">Next &gt;</button>
+          <button id="add-meal">+ Add Meal</button>
         </div>
 
         <table>
@@ -191,39 +476,92 @@
       <div class="summary">
         <h2>Daily Summary</h2>
         <div class="circle">
-            <p>Total Calories</p>
-            <p class="big-text" id="total-calories">0</p>
-            <p>of {{ daily_nutrition.goal_calories }}</p>
+          <p>Total Calories</p>
+          <p class="big-text" id="total-calories">0</p>
+          <p>
+            of
+            <span id="goal-calories">{{ daily_nutrition.goal_calories }}</span>
+          </p>
         </div>
         <div class="macros">
-            <p>
-                Proteins: <span id="total-proteins">0</span>/<span id="goal-proteins">{{ daily_nutrition.goal_proteins }}</span>g
-                <div class="progress-bar">
-                    <div class="progress" style="width: {{ daily_nutrition.protein_percentage }}%"></div>
-                </div>
-            </p>
-            <p>
-                Fats: <span id="total-fats">0</span>/<span id="goal-fats">{{ daily_nutrition.goal_fats }}</span>g
-                <div class="progress-bar">
-                    <div class="progress" style="width: {{ daily_nutrition.fat_percentage }}%"></div>
-                </div>
-            </p>
-            <p>
-                Carbs: <span id="total-carbs">0</span>/<span id="goal-carbs">{{ daily_nutrition.goal_carbs }}</span>g
-                <div class="progress-bar">
-                    <div class="progress" style="width: {{ daily_nutrition.carb_percentage }}%"></div>
-                </div>
-            </p>
+          <div class="macro-item">
+            <div class="macro-info">
+              <span><i class="fas fa-dumbbell"></i> Proteins:</span>
+              <span class="macro-values"
+                ><span id="total-proteins">0</span>/<span id="goal-proteins"
+                  >{{ daily_nutrition.goal_proteins }}</span
+                >g</span
+              >
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div
+                  class="progress protein-progress"
+                  id="protein-progress"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-info">
+              <span><i class="fas fa-bacon"></i> Fats:</span>
+              <span class="macro-values"
+                ><span id="total-fats">0</span>/<span id="goal-fats"
+                  >{{ daily_nutrition.goal_fats }}</span
+                >g</span
+              >
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div
+                  class="progress fat-progress"
+                  id="fat-progress"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <div class="macro-item">
+            <div class="macro-info">
+              <span><i class="fas fa-bread-slice"></i> Carbs:</span>
+              <span class="macro-values"
+                ><span id="total-carbs">0</span>/<span id="goal-carbs"
+                  >{{ daily_nutrition.goal_carbs }}</span
+                >g</span
+              >
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div
+                  class="progress carb-progress"
+                  id="carb-progress"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="water-tracker">
-            <h3>Water Intake</h3>
-            <div>
-                <span id="water-intake">{{ daily_nutrition.water_intake }}</span> ml
-                <progress value="{{ daily_nutrition.water_intake }}" max="{{ water_goal }}"></progress>
-                <button onclick="updateWaterIntake(250)">+250</button>
-                <button onclick="updateWaterIntake(-250)">-250</button>
-            </div>
+          <h3><i class="fas fa-tint"></i> Water Intake</h3>
+          <div class="water-info">
+            <span id="water-intake">0</span>
+            <span class="water-remaining" id="water-remaining"
+              >0 ml remaining</span
+            >
+          </div>
+          <progress
+            id="water-progress"
+            value="0"
+            max="{{ water_goal }}"
+          ></progress>
+          <div class="water-buttons">
+            <button onclick="updateWaterIntake(250)">+250ml</button>
+            <button onclick="updateWaterIntake(500)">+500ml</button>
+            <button onclick="updateWaterIntake(-250)">-250ml</button>
+          </div>
         </div>
+      </div>
     </div>
 
     <div id="meal-modal" class="modal">
@@ -284,8 +622,10 @@
           min="0"
         />
 
-        <button id="save-meal">Save</button>
-        <button id="close-modal">Close</button>
+        <div style="margin-top: 20px">
+          <button id="save-meal">Save Meal</button>
+          <button id="close-modal">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -364,6 +704,13 @@
 
         saveMealBtn.addEventListener("click", saveMeal);
 
+        // Close modal when clicking outside
+        mealModal.addEventListener("click", (e) => {
+          if (e.target === mealModal) {
+            mealModal.style.display = "none";
+          }
+        });
+
         // Set up auto-refresh every minute
         setInterval(loadDailyData, 60000);
       }
@@ -401,7 +748,7 @@
 
         if (!meals || meals.length === 0) {
           mealsList.innerHTML =
-            '<tr><td colspan="2">No meals recorded for this day</td></tr>';
+            '<tr><td colspan="2" style="text-align: center; padding: 20px; color: #666;">No meals recorded for this day</td></tr>';
           return;
         }
 
@@ -422,21 +769,33 @@
           if (meals.length === 0) continue;
 
           const typeRow = document.createElement("tr");
-          typeRow.innerHTML = `<td colspan="2"><strong>${
+          typeRow.innerHTML = `<td colspan="2" class="meal-type-header">${
             mealType.charAt(0).toUpperCase() + mealType.slice(1)
-          }</strong></td>`;
+          }</td>`;
           mealsList.appendChild(typeRow);
 
           meals.forEach((meal) => {
             const mealRow = document.createElement("tr");
             mealRow.innerHTML = `
-                <td>${meal.name}</td>
+                <td style="font-weight: 500;">${meal.name}</td>
                 <td>
-                    ${meal.calories} kcal | 
-                    P: ${meal.proteins}g | 
-                    F: ${meal.fats}g | 
-                    C: ${meal.carbs}g
-                    <button class="delete-meal" data-meal-id="${meal.id}">×</button>
+                    <span style="color: ${
+                      meal.calories > 500
+                        ? "var(--danger-color)"
+                        : "var(--success-color)"
+                    }">${meal.calories} kcal</span> | 
+                    <i class="fas fa-dumbbell" style="color: #e63946;"></i> ${
+                      meal.proteins
+                    }g | 
+                    <i class="fas fa-bacon" style="color: #457b9d;"></i> ${
+                      meal.fats
+                    }g | 
+                    <i class="fas fa-bread-slice" style="color: #2a9d8f;"></i> ${
+                      meal.carbs
+                    }g
+                    <button class="delete-meal" data-meal-id="${
+                      meal.id
+                    }" title="Delete meal">×</button>
                 </td>
             `;
             mealsList.appendChild(mealRow);
@@ -451,40 +810,82 @@
 
       // Update water intake display
       function updateWaterIntakeDisplay(amount) {
-        document.getElementById("water-intake").textContent = amount;
+        const waterGoal = parseInt(
+          document.querySelector("#water-progress").max
+        );
+        const remaining = Math.max(0, waterGoal - amount);
+
+        document.getElementById("water-intake").textContent = `${amount} ml`;
+        document.getElementById(
+          "water-remaining"
+        ).textContent = `${remaining} ml remaining`;
+        document.getElementById("water-progress").value = amount;
       }
 
-      // Update nutrition summary (calories and macros)
       function updateNutritionSummary(data) {
-        const totalCalories = data.calories || 0;
-        const totalProteins = data.proteins || 0;
-        const totalFats = data.fats || 0;
-        const totalCarbs = data.carbs || 0;
-        const goalCalories = data.goal_calories || 0;
-        const goalProteins = data.goal_proteins || 0;
-        const goalFats = data.goal_fats || 0;
-        const goalCarbs = data.goal_carbs || 0;
+        // Получаем значения из данных или устанавливаем 0
+        const totalCalories = parseFloat(data.calories) || 0;
+        const totalProteins = parseFloat(data.proteins) || 0;
+        const totalFats = parseFloat(data.fats) || 0;
+        const totalCarbs = parseFloat(data.carbs) || 0;
 
-        // Update UI
-        document.getElementById("total-calories").textContent = totalCalories;
-        document.getElementById("total-proteins").textContent = totalProteins;
-        document.getElementById("total-fats").textContent = totalFats;
-        document.getElementById("total-carbs").textContent = totalCarbs;
+        // Получаем цели из данных или из DOM (если данные не пришли)
+        const goalCalories =
+          parseFloat(data.goal_calories) ||
+          parseFloat(document.getElementById("goal-calories").textContent) ||
+          1;
+        const goalProteins =
+          parseFloat(data.goal_proteins) ||
+          parseFloat(document.getElementById("goal-proteins").textContent) ||
+          1;
+        const goalFats =
+          parseFloat(data.goal_fats) ||
+          parseFloat(document.getElementById("goal-fats").textContent) ||
+          1;
+        const goalCarbs =
+          parseFloat(data.goal_carbs) ||
+          parseFloat(document.getElementById("goal-carbs").textContent) ||
+          1;
 
-        document.getElementById("goal-proteins").textContent = goalProteins;
-        document.getElementById("goal-fats").textContent = goalFats;
-        document.getElementById("goal-carbs").textContent = goalCarbs;
+        // Обновляем текстовые значения
+        document.getElementById("total-calories").textContent =
+          Math.round(totalCalories);
+        document.getElementById("total-proteins").textContent =
+          Math.round(totalProteins);
+        document.getElementById("total-fats").textContent =
+          Math.round(totalFats);
+        document.getElementById("total-carbs").textContent =
+          Math.round(totalCarbs);
 
-        const remainingCalories = goalCalories - totalCalories;
-        const remainingElement = document.getElementById(
-          "remaining-calories-value"
+        // Рассчитываем проценты с ограничением до 100%
+        const proteinPercentage = Math.min(
+          100,
+          (totalProteins / goalProteins) * 100
         );
-        remainingElement.textContent = Math.abs(remainingCalories);
+        const fatPercentage = Math.min(100, (totalFats / goalFats) * 100);
+        const carbPercentage = Math.min(100, (totalCarbs / goalCarbs) * 100);
 
-        if (remainingCalories >= 0) {
-          remainingElement.className = "remaining-positive";
+        // Обновляем прогресс-бары
+        document.getElementById(
+          "protein-progress"
+        ).style.width = `${proteinPercentage}%`;
+        document.getElementById(
+          "fat-progress"
+        ).style.width = `${fatPercentage}%`;
+        document.getElementById(
+          "carb-progress"
+        ).style.width = `${carbPercentage}%`;
+
+        // Обновляем цвет круга калорий
+        const circle = document.querySelector(".circle");
+        const percentage = (totalCalories / goalCalories) * 100;
+
+        if (percentage > 100) {
+          circle.style.borderColor = "var(--danger-color)";
+        } else if (percentage > 75) {
+          circle.style.borderColor = "var(--warning-color)";
         } else {
-          remainingElement.className = "remaining-negative";
+          circle.style.borderColor = "var(--primary-color)";
         }
       }
 
@@ -517,6 +918,13 @@
           // Close modal and refresh data
           mealModal.style.display = "none";
           loadDailyData();
+
+          // Reset form
+          document.getElementById("meal-name").value = "";
+          document.getElementById("meal-calories").value = "";
+          document.getElementById("meal-proteins").value = "";
+          document.getElementById("meal-fats").value = "";
+          document.getElementById("meal-carbs").value = "";
         } catch (error) {
           console.error("Error saving meal:", error);
           alert("Error saving meal: " + error.message);
@@ -573,7 +981,7 @@
           if (!response.ok) throw new Error("Failed to update water intake");
 
           // Update UI
-          document.getElementById("water-intake").textContent = newAmount;
+          updateWaterIntakeDisplay(newAmount);
         } catch (error) {
           console.error("Error updating water intake:", error);
           alert("Error updating water intake: " + error.message);
