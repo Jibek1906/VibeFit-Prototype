@@ -30,12 +30,11 @@
       }
 
       .header {
-        height: 70px;
+        height: 60px;
         background-color: var(--secondary-color);
-        padding: 0 30px;
+        padding: 0 20px;
         display: flex;
         align-items: center;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
 
       .today {
@@ -109,8 +108,8 @@
 
       .calendar-header h2 {
         margin: 0;
-        font-size: 1.5rem;
-        color: var(--primary-color);
+        font-size: 18px;
+        color: black;
         flex-grow: 1;
         text-align: center;
       }
@@ -152,7 +151,7 @@
       }
 
       th {
-        background-color: var(--light-color);
+        background-color: #d1ccb6;
         font-weight: 600;
         color: var(--dark-color);
       }
@@ -419,9 +418,56 @@
       }
 
       .meal-type-header {
+        background-color: #e2e0d1;
         color: var(--primary-color);
         font-weight: 600;
         font-size: 1.1rem;
+        padding: 12px 15px;
+        text-transform: capitalize;
+        position: relative;
+        padding-left: 45px;
+      }
+
+      .meal-type-header::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      .meal-type-header[data-meal-type="breakfast"]::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23538558'%3E%3Cpath d='M4 4h16v2H4V4zm0 3h16v2H4V7zm16 3v10H4V10h16z'/%3E%3C/svg%3E");
+      }
+
+      .meal-type-header[data-meal-type="lunch"]::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23538558'%3E%3Cpath d='M12 3c-4.97 0-9 2.185-9 4.875V12h18V7.875C21 5.185 16.97 3 12 3zM3 13v5.125C3 20.815 7.03 23 12 23s9-2.185 9-4.875V13H3z'/%3E%3C/svg%3E");
+      }
+
+      .meal-type-header[data-meal-type="dinner"]::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23538558'%3E%3Cpath d='M19 3H5v2h14V3zm0 3H5v2h14V6zm0 3H5v2h14V9zm-7 3H5v2h7v-2zm0 3H5v2h7v-2zm0 3H5v2h7v-2z'/%3E%3C/svg%3E");
+      }
+
+      .meal-type-header[data-meal-type="snacks"]::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23538558'%3E%3Cpath d='M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1.4c0-2 4-3.1 6-3.1s6 1.1 6 3.1V18z'/%3E%3C/svg%3E");
+      }
+
+      .meal-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .meal-details span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
 
       @media (max-width: 768px) {
@@ -454,9 +500,9 @@
     <div class="container">
       <div class="calendar">
         <div class="calendar-header">
-          <button id="prev-day">&lt; Previous</button>
+          <button id="prev-day">Previous</button>
           <h2 id="current-date"></h2>
-          <button id="next-day">Next &gt;</button>
+          <button id="next-day">Next</button>
           <button id="add-meal">+ Add Meal</button>
         </div>
 
@@ -467,9 +513,7 @@
               <th>Details</th>
             </tr>
           </thead>
-          <tbody id="meals-list">
-            <!-- Meals will be inserted here by JavaScript -->
-          </tbody>
+          <tbody id="meals-list"></tbody>
         </table>
       </div>
 
@@ -769,7 +813,7 @@
           if (meals.length === 0) continue;
 
           const typeRow = document.createElement("tr");
-          typeRow.innerHTML = `<td colspan="2" class="meal-type-header">${
+          typeRow.innerHTML = `<td colspan="2" class="meal-type-header" data-meal-type="${mealType}">${
             mealType.charAt(0).toUpperCase() + mealType.slice(1)
           }</td>`;
           mealsList.appendChild(typeRow);
@@ -779,23 +823,31 @@
             mealRow.innerHTML = `
                 <td style="font-weight: 500;">${meal.name}</td>
                 <td>
-                    <span style="color: ${
-                      meal.calories > 500
-                        ? "var(--danger-color)"
-                        : "var(--success-color)"
-                    }">${meal.calories} kcal</span> | 
-                    <i class="fas fa-dumbbell" style="color: #e63946;"></i> ${
-                      meal.proteins
-                    }g | 
-                    <i class="fas fa-bacon" style="color: #457b9d;"></i> ${
-                      meal.fats
-                    }g | 
-                    <i class="fas fa-bread-slice" style="color: #2a9d8f;"></i> ${
-                      meal.carbs
-                    }g
-                    <button class="delete-meal" data-meal-id="${
-                      meal.id
-                    }" title="Delete meal">×</button>
+                    <div class="meal-details">
+                        <span style="color: ${
+                          meal.calories > 500
+                            ? "var(--danger-color)"
+                            : "var(--success-color)"
+                        }">
+                            <i class="fas fa-fire" style="color: inherit;"></i>
+                            ${meal.calories} kcal
+                        </span>
+                        <span>
+                            <i class="fas fa-dumbbell" style="color: #e63946;"></i>
+                            ${meal.proteins}g
+                        </span>
+                        <span>
+                            <i class="fas fa-bacon" style="color: #457b9d;"></i>
+                            ${meal.fats}g
+                        </span>
+                        <span>
+                            <i class="fas fa-bread-slice" style="color: #2a9d8f;"></i>
+                            ${meal.carbs}g
+                        </span>
+                        <button class="delete-meal" data-meal-id="${
+                          meal.id
+                        }" title="Delete meal">×</button>
+                    </div>
                 </td>
             `;
             mealsList.appendChild(mealRow);
@@ -889,12 +941,50 @@
         }
       }
 
+      // Validate meal form
+      function validateMealForm() {
+        const name = document.getElementById("meal-name").value.trim();
+        const calories = document.getElementById("meal-calories").value;
+        const proteins = document.getElementById("meal-proteins").value;
+        const fats = document.getElementById("meal-fats").value;
+        const carbs = document.getElementById("meal-carbs").value;
+
+        if (!name) {
+          alert("Please enter a meal name");
+          return false;
+        }
+
+        if (!calories || isNaN(calories) || parseInt(calories) < 0) {
+          alert("Please enter a valid calorie amount");
+          return false;
+        }
+
+        if (!proteins || isNaN(proteins) || parseInt(proteins) < 0) {
+          alert("Please enter a valid protein amount");
+          return false;
+        }
+
+        if (!fats || isNaN(fats) || parseInt(fats) < 0) {
+          alert("Please enter a valid fat amount");
+          return false;
+        }
+
+        if (!carbs || isNaN(carbs) || parseInt(carbs) < 0) {
+          alert("Please enter a valid carb amount");
+          return false;
+        }
+
+        return true;
+      }
+
       // Save a new meal
       async function saveMeal() {
+        if (!validateMealForm()) return;
+
         const mealData = {
           date: document.getElementById("meal-date").value,
           meal_type: document.getElementById("meal-type").value,
-          name: document.getElementById("meal-name").value,
+          name: document.getElementById("meal-name").value.trim(),
           calories:
             parseInt(document.getElementById("meal-calories").value) || 0,
           proteins:
